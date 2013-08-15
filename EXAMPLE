@@ -1,0 +1,8 @@
+Example:
+run monkeypatched.py in one terminal, and in another one run "curl 127.0.0.1:8888 ; curl -X POST 127.0.0.1:8888"
+The tornado terminal will look like this:
+$ ./monkeypatched.py
+CRITICAL:tornadotiming:Slow generator function iteration took 2.001378 seconds on ./monkeypatched.py line 19 get(<__main__.MainHandler object at 0x103ef00d0>) returned <tornado.gen.Task object at 0x103ef0510>
+INFO:tornado.access:200 GET / (127.0.0.1) 12015.81ms
+CRITICAL:tornadotiming:Slow function call took 10.012777 seconds on ./monkeypatched.py line 24 post() returned None
+INFO:tornado.access:200 POST / (127.0.0.1) 10013.58ms
