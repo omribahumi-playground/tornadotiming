@@ -18,8 +18,9 @@ def formatargs(args, kwargs):
 
 
 def timingwrapper(f):
-    """If you don't want to monkeypatch tornado.web.RequestHandler,
-    you can use this function to decorate a non tornado.gen function
+    """Function decorator.
+    Measures how long it took a function to run. If it was longer than 1 second,
+    it issues a critical logging message.
     """
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
@@ -41,7 +42,10 @@ def timingwrapper(f):
     return wrapper
 
 def timingwrapper_gen(f):
-    """Don't use this function directly, use coroutine() instead"""
+    """Function decorator.
+    Measures how long it took the generator to yield every result.
+    If it was longer than 1 second, it issues a critical logging message.
+    """
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         nextValue = None
@@ -71,28 +75,11 @@ def timingwrapper_gen(f):
 
     return wrapper
 
-class TimingRequestHandler(tornado.web.RequestHandler):
-    """If you don't want to monkeypatch tornado.web.RequestHandler, use this
-    class instead in your code
-    """
-    @functools.wraps(original_RequestHandler_init)
-    def __init__(self, *args, **kwargs):
-        original_RequestHandler_init(*args, **kwargs)
-        for method in self.SUPPORTED_METHODS:
-            # functio names are method in lower case
-            method = method.lower()
-
-            # if it has implementation for that function
-            if getattr(self, method, None):
-                func = getattr(self, method)
-                # only if it's not a generator function
-                if not func.func_code.co_flags & 0x20:
-                    # wrap it!
-                    setattr(self, method, timingwrapper(func))
-
 @functools.wraps(original_RequestHandler_init)
 def monkeypatched_RequestHandler_init(self, *args, **kwargs):
-    """I couldn't replace the entire class because it caused an issue with the
+    """tornado.web.RequestHandler.__init__ functino replacement
+
+    I couldn't replace the entire class because it caused an issue with the
     original constructor. When replacing RequestHandler with TimingRequestHandler,
     the original RequestHandler code is expecting `object` when calling
     super(RequestHandler, self), but is getting itself instead
@@ -112,7 +99,13 @@ def monkeypatched_RequestHandler_init(self, *args, **kwargs):
                 # wrap it!
                 setattr(self, method, timingwrapper(func))
 
-
+class TimingRequestHandler(tornado.web.RequestHandler):
+    """If you don't want to monkeypatch tornado.web.RequestHandler, use this
+    class instead in your code
+    """
+    @functools.wraps(original_RequestHandler_init)
+    def __init__(self, *args, **kwargs):
+        monkeypatched_RequestHandler_init(self, *args, **kwargs)
 
 @functools.wraps(tornado.gen.coroutine)
 def coroutine(f):
